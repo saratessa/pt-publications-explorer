@@ -1,0 +1,5 @@
+"0","bslib::layout_columns("
+"0","  col_widths = c(6, 6),"
+"0","  bslib::card(bslib::card_header(""Publications by Year""),  bslib::card_body(plotlyOutput(""by_year""))),"
+"0","  bslib::card(bslib::card_header(""Publications by Type""),  bslib::card_body(plotlyOutput(""by_type"")))"
+"0",")"

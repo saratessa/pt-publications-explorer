@@ -1,0 +1,141 @@
+"0","# Server logic ------------------------------------------------------------"
+"0",""
+"0","# 1) Reactive filtering based on inputs"
+"0","filtered <- reactive({"
+"0","  df <- pubs0"
+"0",""
+"0","  # Year range"
+"0","  if (!is.null(input$year) && length(input$year) == 2 && all(is.finite(input$year))) {"
+"0","    df <- df |> filter(is.na(year) | (year >= input$year[1] & year <= input$year[2]))"
+"0","  }"
+"0",""
+"0","  # Type"
+"0","  if (!is.null(input$type) && length(input$type)) {"
+"0","    df <- df |> filter(publicationtype %in% input$type)"
+"0","  }"
+"0",""
+"0","  # Focus area"
+"0","  if (!is.null(input$focus) && length(input$focus)) {"
+"0","    df <- df |> filter(focusarea %in% input$focus)"
+"0","  }"
+"0",""
+"0","  # Keyword in author/title/focus"
+"0","  if (!is.null(input$q) && nzchar(trimws(input$q))) {"
+"0","    needle <- tolower(trimws(input$q))"
+"0","    df <- df |>"
+"0","      mutate(_hay = tolower(paste(author, title, focusarea, sep = "" ""))) |>"
+"2","G1;H1;Errorh: unexpected symbol in:
+""    df <- df |>
+      mutate(_hay""
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"
+"0","      filter(grepl(needle, _hay, fixed = TRUE)) |>"
+"2","G1;H1;Errorh: unexpected symbol in ""      filter(grepl(needle, _hay""
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"
+"0","      select(-_hay)"
+"2","G1;H1;Errorh: unexpected symbol in ""      select(-_hay""
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"
+"0","  }"
+"2","G1;H1;Errorh: unexpected '}' in ""  }""
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"
+"0","  df"
+"1","function (x, df1, df2, ncp, log = FALSE) 
+{
+    if (missing(ncp)) 
+        .Call(C_df, x, df1, df2, log)
+    else .Call(C_dnf, x, df1, df2, ncp, log)
+}
+<bytecode: 0x7fb46ff426f0>
+<environment: namespace:stats>
+"
+"0","})"
+"2","G1;H1;Errorh: unexpected '}' in ""}""
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"
+"0","# 2) Stats that update"
+"0","output$stats_boxes <- renderUI({"
+"0","  df <- filtered()"
+"0","  span <- if (all(is.na(df$year))) ""—"" else paste0(min(df$year, na.rm = TRUE), ""–"", max(df$year, na.rm = TRUE))"
+"0","  bslib::layout_column_wrap("
+"0","    width = 1/2, heights_equal = ""all"","
+"0","    bslib::value_box(value = nrow(df), title = ""Publications"", theme_color = ""primary""),"
+"0","    bslib::value_box(value = span, title = ""Year span"", theme_color = ""primary""),"
+"0","    bslib::value_box(value = dplyr::n_distinct(df$author), title = ""Unique author entries"", theme_color = ""primary""),"
+"0","    bslib::value_box(value = dplyr::n_distinct(df$focusarea), title = ""Focus areas"", theme_color = ""primary"")"
+"0","  )"
+"0","})"
+"2","G1;H1;Errorh: object 'output' not found
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"
+"0","# 3) Charts that update"
+"0","output$by_year <- renderPlotly({"
+"0","  df <- filtered()"
+"0","  plot_ly(df, x = ~year, type = ""histogram"", marker = list(color = ""#E91E63"")) |>"
+"0","    layout(xaxis = list(title = ""Year""), yaxis = list(title = ""Count""), bargap = 0.15)"
+"0","})"
+"2","G1;H1;Errorh: object 'output' not found
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"
+"0","output$by_type <- renderPlotly({"
+"0","  df <- filtered()"
+"0","  plot_ly(df, x = ~publicationtype, type = ""histogram"", marker = list(color = ""#E91E63"")) |>"
+"0","    layout(xaxis = list(title = """"), yaxis = list(title = ""Count""))"
+"0","})"
+"2","G1;H1;Errorh: object 'output' not found
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"
+"0","output$by_focus <- renderPlotly({"
+"0","  df <- filtered()"
+"0","  # order focus by overall frequency in the filtered data"
+"0","  ord <- df |> count(focusarea, name = ""n"") |> arrange(desc(n)) |> slice_head(n = 15)"
+"0","  plot_ly("
+"0","    df,"
+"0","    y = ~factor(focusarea, levels = ord$focusarea[order(ord$n)]),"
+"0","    type = ""histogram"", orientation = ""h"","
+"0","    marker = list(color = ""#E91E63"")"
+"0","  ) |>"
+"0","    layout(xaxis = list(title = ""Count""), yaxis = list(title = """"), margin = list(l = 180))"
+"0","})"
+"2","G1;H1;Errorh: object 'output' not found
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"
+"0","# 4) Table that updates"
+"0","output$table <- renderDT({"
+"0","  df <- filtered() |>"
+"0","    mutate(link_display = ifelse(is.na(link) | link=="""", """", paste0(""<a href='"", link, ""' target='_blank'>Open</a>""))) |>"
+"0","    select(year, publicationtype, focusarea, author, title, link_display)"
+"0",""
+"0","  # Escape everything except the HTML link column"
+"0","  escape_cols <- setdiff(seq_along(df), which(names(df) == ""link_display""))"
+"0",""
+"0","  datatable("
+"0","    df,"
+"0","    escape    = escape_cols,"
+"0","    rownames  = FALSE,"
+"0","    filter    = ""top"","
+"0","    extensions = ""Buttons"","
+"0","    options = list("
+"0","      pageLength = 12, autoWidth = TRUE, dom = ""Bfrtip"","
+"0","      buttons = c(""copy"", ""csv"", ""excel"", ""print""),"
+"0","      search  = list(search = """")"
+"0","    ),"
+"0","    colnames = c(""Year"",""Type"",""Focus Area"",""Author"",""Title"",""Link""),"
+"0","    class    = ""display nowrap compact"""
+"0","  )"
+"0","})"
+"2","G1;H1;Errorh: object 'output' not found
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"

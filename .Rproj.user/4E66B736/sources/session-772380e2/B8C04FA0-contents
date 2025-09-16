@@ -1,0 +1,67 @@
+/* Pink-forward theme overrides (bslib/Bootstrap variables) */
+$primary: #e91e63;     /* Pink 500 */
+$secondary: #f48fb1;   /* Pink 200 */
+$body-color: #2f3342;
+$link-color: $primary;
+$navbar-bg: #ffffff;
+
+/* Card and layout polish */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 8px 0 18px 0;
+}
+.kpi {
+  background: linear-gradient(180deg, rgba(233,30,99,.10), rgba(233,30,99,.03));
+  border: 1px solid rgba(233,30,99,.25);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+.kpi-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #e91e63;
+  line-height: 1.1;
+}
+.kpi-label {
+  font-size: .85rem;
+  opacity: .8;
+}
+
+.hint {
+  margin-top: .75rem;
+  background: #fff5f8;
+  border-left: 4px solid #e91e63;
+  padding: .5rem .75rem;
+  border-radius: 8px;
+  font-size: .9rem;
+}
+
+.chip {
+  display: inline-block;
+  background: #ffe0eb;
+  color: #8a0f3a;
+  border: 1px solid #f8b8cc;
+  border-radius: 999px;
+  padding: .1rem .5rem;
+  margin-right: .25rem;
+  font-size: .8rem;
+}
+
+.sidebar nav, .sidebar .nav {
+  font-size: .95rem;
+}
+
+.btn-link {
+  display: inline-block;
+  padding: .2rem .6rem;
+  border-radius: 12px;
+  background: #ffe3ee;
+  border: 1px solid #f7b3ca;
+  text-decoration: none;
+}
+
+.plotly .xtick text, .plotly .ytick text {
+  font-size: 12px !important;
+}

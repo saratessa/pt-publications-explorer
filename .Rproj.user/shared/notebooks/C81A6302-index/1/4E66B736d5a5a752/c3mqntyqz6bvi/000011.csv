@@ -1,0 +1,4 @@
+"0","bslib::card("
+"0","  bslib::card_header(""Publications Table""),"
+"0","  bslib::card_body(DTOutput(""table""))"
+"0",")"

@@ -1,0 +1,32 @@
+---
+title: "About the Publications Explorer"
+toc: false
+---
+
+## What this is
+
+The **Publications Explorer** is a searchable, filterable dashboard of research relevant to Precision Teaching. You can filter by year, publication type, focus area, search by author/title keywords, sort columns, and open original sources via the **Link** column.
+
+## Why this exists
+
+To make it **faster and easier for Precision Teachers** to find and use available research.
+
+## What you can do here
+
+-   **Filter** by year, type, and focus area\
+-   **Search** by author/title/keywords (table search box)\
+-   **Sort** any column\
+-   **Download** your filtered results (Copy/CSV/Excel/Print buttons)\
+-   **Jump to sources** using the "open" column\
+-   **Watch trend graphs update live** as you filter
+
+## Help keep it accurate
+
+This explorer was built and is updated by one person. I’ve taken care and attention, but it’s a large project and **errors are possible**. If you notice:
+
+\- a **missing paper**,\
+- a **focus area label** that doesn’t fit, or\
+- a **broken/missing link**,\
+please email [**spalos\@celeration.org**](mailto:spalos@celeration.org).
+
+*Thanks for helping improve this resource for the PT community!*

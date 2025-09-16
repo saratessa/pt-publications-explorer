@@ -1,0 +1,251 @@
+---
+title: "Publications Dashboard"
+format:
+  html:
+    theme: cosmo
+    toc: false
+execute:
+  echo: false
+  warning: false
+  message: false
+params:
+  data_path: "s palos - Sheet1.csv"   
+  logo_path: "scc-logo.png"   
+---
+
+```{r}
+# Libraries ---------------------------------------------------------------
+library(readr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(janitor)
+library(plotly)
+library(DT)
+library(crosstalk)
+library(bslib)
+library(htmltools)
+
+# Theme (pink-forward, no raw CSS) ---------------------------------------
+# Using bslib so everything stays "R only"
+theme <- bslib::bs_theme(
+  version = 5,
+  bootswatch = "cosmo",
+  primary = "#E91E63",     # pink
+  body_color = "#2f3342",
+  base_font = bslib::font_google("Inter")
+)
+bslib::bs_theme_set(theme)
+
+# Data helpers ------------------------------------------------------------
+read_publications <- function(path) {
+  df <- readr::read_csv(path, show_col_types = FALSE) |>
+    janitor::clean_names()
+
+  if ("year" %in% names(df)) suppressWarnings(df$year <- as.integer(df$year))
+
+  for (nm in intersect(c("title","author","publicationtype","focusarea"), names(df))) {
+    df[[nm]] <- df[[nm]] |> as.character() |> stringr::str_squish()
+  }
+
+  if ("focusarea" %in% names(df)) {
+    df$focusarea <- ifelse(is.na(df$focusarea) | df$focusarea == "", "Unspecified", df$focusarea)
+  }
+  if ("publicationtype" %in% names(df)) {
+    df$publicationtype <- ifelse(is.na(df$publicationtype) | df$publicationtype == "", "Unspecified", df$publicationtype)
+  }
+
+  df |> mutate(keyword_field = paste(title, focusarea, sep = " | "))
+}
+
+pubs <- read_publications(params$data_path) |>
+  ungroup() |>
+  mutate(.id = as.character(row_number())) |>
+  as.data.frame()
+
+# Crosstalk shared data so filters affect charts + table
+sd <- crosstalk::SharedData$new(pubs, key = ".id", group = "pubs")
+
+# A helper to show a bigger logo if present
+logo_card <- function(path) {
+  if (!is.null(path) && file.exists(path)) {
+    bslib::card(
+      bslib::card_body(
+        bslib::layout_columns(
+          col_widths = c(2, 10),
+          htmltools::img(src = path, alt = "Logo", style = "max-height:80px; border-radius:8px;"),
+          tagList(
+            h4("Publications Explorer"),
+            div(style="opacity:.8;",
+                "Use filters to narrow by year, type, and focus area. Use the table search for author names or keywords.")
+          )
+        )
+      )
+    )
+  } else {
+    NULL
+  }
+}
+
+```
+
+Header
+
+```{r}
+logo_card(params$logo_path)
+
+```
+
+# Filters & Stats (Row 1)
+
+```{r}
+bslib::layout_columns(
+  col_widths = c(4, 8),
+
+  # Left: Filters
+  bslib::card(
+    bslib::card_header("Filters"),
+    bslib::card_body(
+      tagList(
+        crosstalk::filter_slider("year",   "Year",             sd, ~year),
+        crosstalk::filter_select("type",   "Publication type", sd, ~publicationtype, multiple = TRUE),
+        crosstalk::filter_select("focus",  "Focus area",       sd, ~focusarea,       multiple = TRUE),
+        div(style="margin-top:.25rem; font-size: .9rem; opacity: .8;",
+            "Tip: Use the table’s global search for author names or topic keywords.")
+      )
+    )
+  ),
+
+  # Right: Stats
+  {
+    stats_df <- pubs |>
+      summarise(
+        `Total publications`    = n(),
+        `Year span`             = paste0(min(year, na.rm = TRUE), "–", max(year, na.rm = TRUE)),
+        `Unique author entries` = dplyr::n_distinct(author),
+        `Focus areas`           = dplyr::n_distinct(focusarea)
+      )
+
+    bslib::layout_column_wrap(
+      width = 1/2,
+      heights_equal = "all",
+      bslib::card(bslib::card_body(
+        h3(stats_df$`Total publications`), div(style="opacity:.75;", "Publications")
+      )),
+      bslib::card(bslib::card_body(
+        h3(stats_df$`Year span`), div(style="opacity:.75;", "Year span")
+      )),
+      bslib::card(bslib::card_body(
+        h3(stats_df$`Unique author entries`), div(style="opacity:.75;", "Unique author entries")
+      )),
+      bslib::card(bslib::card_body(
+        h3(stats_df$`Focus areas`), div(style="opacity:.75;", "Focus areas")
+      ))
+    )
+  }
+)
+
+```
+
+# Trends (Row 2)
+
+```{r}
+bslib::layout_columns(
+  col_widths = c(6, 6),
+
+  # Publications by Year
+  bslib::card(
+    bslib::card_header("Publications by Year"),
+    bslib::card_body(
+      plotly::plot_ly(sd, x = ~year, type = "histogram",
+                      marker = list(color = "#E91E63")) |>
+        plotly::layout(
+          xaxis = list(title = "Year"),
+          yaxis = list(title = "Count"),
+          bargap = 0.15
+        )
+    )
+  ),
+
+  # Publications by Type
+  bslib::card(
+    bslib::card_header("Publications by Type"),
+    bslib::card_body(
+      plotly::plot_ly(sd, x = ~publicationtype, type = "histogram",
+                      marker = list(color = "#E91E63")) |>
+        plotly::layout(
+          xaxis = list(title = ""),
+          yaxis = list(title = "Count")
+        )
+    )
+  )
+)
+
+```
+
+# Topics (Row 3)
+
+```{r}
+# Order focus areas by overall frequency for a stable axis (top 15)
+fa_counts <- pubs |> count(focusarea, name = "n") |> arrange(desc(n)) |> slice_head(n = 15)
+
+bslib::card(
+  bslib::card_header("Top Focus Areas"),
+  bslib::card_body(
+    plotly::plot_ly(
+      sd,
+      y = ~factor(focusarea, levels = fa_counts$focusarea[order(fa_counts$n)]),
+      type = "histogram",
+      orientation = "h",
+      marker = list(color = "#E91E63")
+    ) |>
+      plotly::layout(
+        xaxis = list(title = "Count"),
+        yaxis = list(title = ""),
+        margin = list(l = 180)
+      )
+  )
+)
+
+```
+
+# Browse & Search (Row 4)
+
+```{r}
+# Build a display table linked to the same filter group
+tbl_df <- pubs |>
+  mutate(
+    year = ifelse(is.na(year), "", as.character(year)),
+    link_display = ifelse(
+      is.na(link) | link == "",
+      "",
+      paste0("<a href='", link, "' target='_blank'>Open</a>")
+    )
+  ) |>
+  select(.id, year, publicationtype, focusarea, author, title, link_display, keyword_field)
+
+sd_tbl <- crosstalk::SharedData$new(tbl_df, key = ".id", group = "pubs")
+
+bslib::card(
+  bslib::card_header("Publications Table"),
+  bslib::card_body(
+    DT::datatable(
+      sd_tbl,
+      escape = FALSE,
+      rownames = FALSE,
+      filter = "top",
+      extensions = "Buttons",
+      options = list(
+        pageLength = 12,
+        autoWidth  = TRUE,
+        dom        = "Bfrtip",
+        buttons    = c("copy", "csv", "excel", "print"),
+        search     = list(search = "")
+      ),
+      colnames = c("", "Year","Type","Focus Area","Author","Title","Link","_kw_"),
+      class = "display nowrap compact"
+    )
+  )
+)
+
+```

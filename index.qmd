@@ -1,0 +1,288 @@
+---
+title: "“Stand on my shoulders as I stood on Fred Skinner’s shoulder. You see more big things from up here and you see further.” – Ogden Lindsley"
+format:
+  html:
+    theme: cosmo
+    toc: false
+execute:
+  echo: false
+  warning: false
+  message: false
+params:
+  data_path: "s palos - Sheet1.csv"
+  logo_path: "scc-logo.png"
+---
+
+```{r}
+# ----- Setup -----
+library(readr); library(dplyr); library(tidyr); library(stringr); library(janitor)
+library(plotly); library(DT); library(crosstalk); library(bslib); library(htmltools)
+
+
+invisible(crosstalk::crosstalkLibs())
+
+# Pink-forward theme
+theme <- bslib::bs_theme(
+  version = 5, bootswatch = "cosmo",
+  primary   = "#E91E63", body_color = "#2f3342",
+  base_font = bslib::font_google("Inter")
+)
+bslib::bs_theme_set(theme)
+
+# ----- Data helpers -----
+read_publications <- function(path) {
+  df <- readr::read_csv(path, show_col_types = FALSE) |>
+    janitor::clean_names()
+
+  if ("year" %in% names(df)) suppressWarnings(df$year <- as.integer(df$year))
+
+  for (nm in intersect(c("title","author","publicationtype","focusarea"), names(df))) {
+    df[[nm]] <- as.character(df[[nm]]) |> stringr::str_squish()
+  }
+
+  # map link column if named differently in CSV
+  link_candidates <- intersect(names(df), c("link","url","pdf","doi","weblink","link_url"))
+  if (length(link_candidates) == 0) {
+    df$link <- NA_character_
+  } else if (!"link" %in% names(df)) {
+    df$link <- df[[link_candidates[1]]]
+  }
+
+  if ("focusarea" %in% names(df))
+    df$focusarea <- ifelse(is.na(df$focusarea) | df$focusarea == "", "Unspecified", df$focusarea)
+  if ("publicationtype" %in% names(df))
+    df$publicationtype <- ifelse(is.na(df$publicationtype) | df$publicationtype == "", "Unspecified", df$publicationtype)
+
+  df |> mutate(keyword_field = paste(title, focusarea, sep = " | "))
+}
+
+# Read data and build a character key for Crosstalk
+pubs <- read_publications(params$data_path) |>
+  dplyr::ungroup() |>
+  dplyr::mutate(
+    .id = as.character(dplyr::row_number()),  # << key MUST be character
+    link_display = ifelse(is.na(link) | link=="", "", paste0("<a href='", link, "' target='_blank'>Open</a>"))
+  ) |>
+  as.data.frame()
+
+# ONE SharedData used by the plots (use the same group name everywhere)
+sd <- crosstalk::SharedData$new(pubs, key = ~.id, group = "pubs")
+
+```
+
+```{r}
+# ----- Optional header logo (shows only if the file exists) -----
+if (!is.null(params$logo_path) && file.exists(params$logo_path)) {
+  bslib::card(
+    bslib::card_body(
+      bslib::layout_columns(
+        col_widths = c(2, 10),
+        htmltools::img(src = params$logo_path, alt = "Logo", style = "max-height:100px; border-radius:8px;"),
+        htmltools::tagList(
+          htmltools::h4("Publications Explorer"),
+          htmltools::div(style="opacity:.8;",
+            "Use filters to narrow by year, type, and focus area. Use the table search for author names or keywords."
+          )
+        )
+      )
+    )
+  )
+}
+
+```
+
+> New here? See [**About**](about.qmd) for what this explorer does and how to report fixes.
+
+### Filters and Stats
+
+```{r}
+bslib::layout_columns(
+  col_widths = c(4, 8),
+
+  # LEFT: Filters (drive plots + table via group = 'pubs')
+  bslib::card(
+    bslib::card_header("Filters"),
+    bslib::card_body(
+      htmltools::tagList(
+        crosstalk::filter_slider("year",  "Year",             sd, ~year),
+        crosstalk::filter_select("type",  "Publication type", sd, ~publicationtype, multiple = TRUE),
+        crosstalk::filter_select("focus", "Focus area",       sd, ~focusarea,       multiple = TRUE),
+        htmltools::div(
+          style = "margin-top:.25rem; font-size:.9rem; opacity:.8;",
+          "Tip: Use the table’s global search for author names or topic keywords."
+        )
+      )
+    )
+  ),
+
+  # RIGHT: Stats (these values update live via the table callback below)
+  {
+    stats_df <- pubs |>
+      dplyr::summarise(
+        total    = dplyr::n(),
+        span     = paste0(min(year, na.rm = TRUE), "–", max(year, na.rm = TRUE)),
+        authors  = dplyr::n_distinct(author),
+        focuses  = dplyr::n_distinct(focusarea)
+      )
+
+    bslib::layout_column_wrap(
+      width = 1/2, heights_equal = "all",
+      bslib::value_box(
+        value = htmltools::tags$span(id = "stat-total",   stats_df$total),
+        title = "Publications", theme_color = "primary"
+      ),
+      bslib::value_box(
+        value = htmltools::tags$span(id = "stat-span",    stats_df$span),
+        title = "Year span", theme_color = "primary"
+      ),
+      bslib::value_box(
+        value = htmltools::tags$span(id = "stat-authors", stats_df$authors),
+        title = "Unique author entries", theme_color = "primary"
+      ),
+      bslib::value_box(
+        value = htmltools::tags$span(id = "stat-focus",   stats_df$focuses),
+        title = "Focus areas", theme_color = "primary"
+      )
+    )
+  }
+)
+
+```
+
+### Trends
+
+```{r}
+bslib::layout_columns(
+  col_widths = c(6, 6),
+
+  bslib::card(
+    bslib::card_header("Publications by Year"),
+    bslib::card_body(
+      plotly::plot_ly(sd, x = ~year, type = "histogram",
+                      marker = list(color = "#E91E63")) |>
+        plotly::layout(xaxis = list(title = "Year"), yaxis = list(title = "Count"), bargap = 0.15)
+    )
+  ),
+
+  bslib::card(
+    bslib::card_header("Publications by Type"),
+    bslib::card_body(
+      plotly::plot_ly(sd, x = ~publicationtype, type = "histogram",
+                      marker = list(color = "#E91E63")) |>
+        plotly::layout(xaxis = list(title = ""), yaxis = list(title = "Count"))
+    )
+  )
+)
+
+```
+
+### Focus Areas
+
+```{r}
+fa_counts <- pubs |> dplyr::count(focusarea, name = "n") |> dplyr::arrange(dplyr::desc(n)) |> dplyr::slice_head(n = 15)
+
+bslib::card(
+  bslib::card_header("Top Focus Areas"),
+  bslib::card_body(
+    plotly::plot_ly(
+      sd,
+      y = ~factor(focusarea, levels = fa_counts$focusarea[order(fa_counts$n)]),
+      type = "histogram", orientation = "h",
+      marker = list(color = "#E91E63")
+    ) |>
+      plotly::layout(xaxis = list(title = "Count"), yaxis = list(title = ""), margin = list(l = 180))
+  )
+)
+
+```
+
+### Browse and Search
+
+```{r}
+# Build a clean data frame in a fixed column order
+tbl_df <- pubs |>
+  dplyr::select(.id, year, publicationtype, focusarea, author, title, link_display, keyword_field)
+
+# The table needs its OWN SharedData, same group + key formula
+sd_tbl <- crosstalk::SharedData$new(tbl_df, key = ~.id, group = "pubs")
+
+# Escape everything except the link column so links render
+escape_cols <- setdiff(seq_along(tbl_df), which(names(tbl_df) == "link_display"))
+
+bslib::card(
+  bslib::card_header("Publications Table"),
+  bslib::card_body(
+    DT::datatable(
+      sd_tbl,
+      escape    = escape_cols,
+      rownames  = FALSE,
+      filter    = "top",
+      extensions = "Buttons",
+      options = list(
+        paging = FALSE,               # show all filtered rows at once (crucial for live stats)
+        scrollY = "50vh",
+        scrollCollapse = TRUE,
+        autoWidth = TRUE,
+        dom = "Bfrtip",
+        buttons = c("copy", "csv", "excel", "print"),
+        search  = list(search = ""),
+        # Hide .id (first) and keyword_field (last) in UI (JS uses 0-based indices)
+        columnDefs = list(list(visible = FALSE, targets = c(0, ncol(tbl_df) - 1)))
+      ),
+      colnames = c("", "Year","Type","Focus Area","Author","Title","Link","_kw_"),
+      class = "display nowrap compact",
+      callback = DT::JS("
+        var table = this.api();
+
+        function visibleRowData(){
+          // With paging off + scroll, all filtered rows exist in the DOM (some off-screen).
+          var nodes = table.rows({search:'applied'}).nodes().to$();
+          var vis = nodes.filter(':visible'); // Crosstalk hides non-matching via display:none
+          return vis.map(function(){ return table.row(this).data(); }).get();
+        }
+
+        function uniqueNonEmpty(arr){
+          var s = {};
+          arr.forEach(function(x){
+            if (x && x.toString().trim() !== '') s[x.toString().trim()] = 1;
+          });
+          return Object.keys(s).length;
+        }
+
+        function updateStats(){
+          var rows = visibleRowData();
+          var total = rows.length;
+
+          // Columns (0-based): 0=.id, 1=Year, 2=Type, 3=Focus, 4=Author, 5=Title, 6=Link, 7=_kw_
+          var yrs = rows.map(function(r){ var n=parseInt(r[1],10); return isNaN(n)?null:n; })
+                        .filter(function(x){ return x!==null; });
+          var span = (yrs.length>0) ? (Math.min.apply(null, yrs) + '–' + Math.max.apply(null, yrs)) : '—';
+
+          var authors = rows.map(function(r){ return r[4]; });
+          var focuses = rows.map(function(r){ return r[3]; });
+
+          var el;
+          el = document.getElementById('stat-total');   if (el) el.textContent = total.toString();
+          el = document.getElementById('stat-span');    if (el) el.textContent = span;
+          el = document.getElementById('stat-authors'); if (el) el.textContent = uniqueNonEmpty(authors).toString();
+          el = document.getElementById('stat-focus');   if (el) el.textContent = uniqueNonEmpty(focuses).toString();
+        }
+
+        // Update when the table redraws
+        table.on('draw.dt search.dt order.dt', updateStats);
+
+        // Update when Crosstalk filters change
+        if (window.crosstalk) {
+          var fh = new crosstalk.FilterHandle('pubs');
+          fh.on('change', function(){ setTimeout(updateStats, 0); });
+          crosstalk.var('selection').on('change', function(){ setTimeout(updateStats, 0); });
+        }
+
+        // Initial compute
+        setTimeout(updateStats, 0);
+      ")
+    )
+  )
+)
+
+```

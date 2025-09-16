@@ -1,0 +1,18 @@
+"0","fa_counts <- pubs |> dplyr::count(focusarea, name = ""n"") |> dplyr::arrange(dplyr::desc(n)) |> dplyr::slice_head(n = 15)"
+"0",""
+"0","bslib::card("
+"0","  bslib::card_header(""Top Focus Areas""),"
+"0","  bslib::card_body("
+"0","    plotly::plot_ly("
+"0","      sd,"
+"0","      y = ~factor(focusarea, levels = fa_counts$focusarea[order(fa_counts$n)]),"
+"0","      type = ""histogram"", orientation = ""h"","
+"0","      marker = list(color = ""#E91E63"")"
+"0","    ) |>"
+"0","      plotly::layout(xaxis = list(title = ""Count""), yaxis = list(title = """"), margin = list(l = 180))"
+"0","  )"
+"0",")"
+"2","G2;H2;Warningh: Ignoring 4 observationsg
+"
+"2","G2;H2;Warningh: Ignoring 4 observationsg
+"

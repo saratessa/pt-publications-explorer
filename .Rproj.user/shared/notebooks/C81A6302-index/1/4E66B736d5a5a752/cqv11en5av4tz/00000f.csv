@@ -1,0 +1,62 @@
+"0","# Libraries ---------------------------------------------------------------"
+"0","library(shiny)"
+"2","G3;
+Attaching package: ‘shiny’
+
+g"
+"2","G3;The following object is masked from ‘package:crosstalk’:
+
+    getDefaultReactiveDomain
+
+g"
+"2","G3;The following objects are masked from ‘package:DT’:
+
+    dataTableOutput, renderDataTable
+
+g"
+"0","library(readr)"
+"0","library(dplyr)"
+"0","library(tidyr)"
+"0","library(stringr)"
+"0","library(janitor)"
+"0","library(plotly)"
+"0","library(DT)"
+"0","library(bslib)"
+"0","library(htmltools)"
+"0",""
+"0","# Theme (pink-forward) ----------------------------------------------------"
+"0","theme <- bslib::bs_theme("
+"0","  version = 5, bootswatch = ""cosmo"","
+"0","  primary = ""#E91E63"", body_color = ""#2f3342"","
+"0","  base_font = bslib::font_google(""Inter"")"
+"0",")"
+"0","bslib::bs_theme_set(theme)"
+"2","G2;H2;Warningh in bslib::bs_theme_set(theme) :
+  'bslib::bs_theme_set' is deprecated.
+Use 'bs_global_set' instead.
+See help(""Deprecated"")g
+"
+"0","# Data helpers ------------------------------------------------------------"
+"0","read_publications <- function(path) {"
+"0","  df <- readr::read_csv(path, show_col_types = FALSE) |>"
+"0","    janitor::clean_names()"
+"0",""
+"0","  if (""year"" %in% names(df)) suppressWarnings(df$year <- as.integer(df$year))"
+"0",""
+"0","  for (nm in intersect(c(""title"",""author"",""publicationtype"",""focusarea"",""link""), names(df))) {"
+"0","    df[[nm]] <- as.character(df[[nm]]) |> stringr::str_squish()"
+"0","  }"
+"0",""
+"0","  if (""focusarea"" %in% names(df))"
+"0","    df$focusarea <- ifelse(is.na(df$focusarea) | df$focusarea == """", ""Unspecified"", df$focusarea)"
+"0","  if (""publicationtype"" %in% names(df))"
+"0","    df$publicationtype <- ifelse(is.na(df$publicationtype) | df$publicationtype == """", ""Unspecified"", df$publicationtype)"
+"0",""
+"0","  df"
+"0","}"
+"0",""
+"0","pubs0 <- read_publications(params$data_path)"
+"0",""
+"0","# UI pieces ---------------------------------------------------------------"
+"0","# (We build the whole layout with shiny + bslib so everything is reactive.)"
+"0",""

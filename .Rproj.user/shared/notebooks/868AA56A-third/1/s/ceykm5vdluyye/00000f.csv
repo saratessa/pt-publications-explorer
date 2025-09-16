@@ -1,0 +1,130 @@
+"0","# Libraries ---------------------------------------------------------------"
+"0","library(readr)"
+"0","library(dplyr)"
+"2","G3;
+Attaching package: ‘dplyr’
+
+g"
+"2","G3;The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+g"
+"2","G3;The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+g"
+"0","library(tidyr)"
+"0","library(stringr)"
+"0","library(janitor)"
+"2","G3;
+Attaching package: ‘janitor’
+
+g"
+"2","G3;The following objects are masked from ‘package:stats’:
+
+    chisq.test, fisher.test
+
+g"
+"0","library(plotly)"
+"2","G3;Loading required package: ggplot2
+g"
+"2","G3;
+Attaching package: ‘plotly’
+
+g"
+"2","G3;The following object is masked from ‘package:ggplot2’:
+
+    last_plot
+
+g"
+"2","G3;The following object is masked from ‘package:stats’:
+
+    filter
+
+g"
+"2","G3;The following object is masked from ‘package:graphics’:
+
+    layout
+
+g"
+"0","library(DT)"
+"0","library(crosstalk)"
+"0","library(bslib)"
+"2","G3;
+Attaching package: ‘bslib’
+
+g"
+"2","G3;The following object is masked from ‘package:utils’:
+
+    page
+
+g"
+"0","library(htmltools)"
+"0",""
+"0","# Theme (pink-forward, no raw CSS) ---------------------------------------"
+"0","# Using bslib so everything stays ""R only"""
+"0","theme <- bslib::bs_theme("
+"0","  version = 5,"
+"0","  bootswatch = ""cosmo"","
+"0","  primary = ""#E91E63"",     # pink"
+"0","  body_color = ""#2f3342"","
+"0","  base_font = bslib::font_google(""Inter"")"
+"0",")"
+"0","bslib::bs_theme_set(theme)"
+"2","G2;H2;Warningh in bslib::bs_theme_set(theme) :
+  'bslib::bs_theme_set' is deprecated.
+Use 'bs_global_set' instead.
+See help(""Deprecated"")g
+"
+"0","# Data helpers ------------------------------------------------------------"
+"0","read_publications <- function(path) {"
+"0","  df <- readr::read_csv(path, show_col_types = FALSE) |>"
+"0","    janitor::clean_names()"
+"0",""
+"0","  if (""year"" %in% names(df)) suppressWarnings(df$year <- as.integer(df$year))"
+"0",""
+"0","  for (nm in intersect(c(""title"",""author"",""publicationtype"",""focusarea""), names(df))) {"
+"0","    df[[nm]] <- df[[nm]] |> as.character() |> stringr::str_squish()"
+"0","  }"
+"0",""
+"0","  if (""focusarea"" %in% names(df)) {"
+"0","    df$focusarea <- ifelse(is.na(df$focusarea) | df$focusarea == """", ""Unspecified"", df$focusarea)"
+"0","  }"
+"0","  if (""publicationtype"" %in% names(df)) {"
+"0","    df$publicationtype <- ifelse(is.na(df$publicationtype) | df$publicationtype == """", ""Unspecified"", df$publicationtype)"
+"0","  }"
+"0",""
+"0","  df |> mutate(keyword_field = paste(title, focusarea, sep = "" | ""))"
+"0","}"
+"0",""
+"0","pubs <- read_publications(params$data_path) |>"
+"0","  ungroup() |>"
+"0","  mutate(.id = as.character(row_number())) |>"
+"0","  as.data.frame()"
+"0",""
+"0","# Crosstalk shared data so filters affect charts + table"
+"0","sd <- crosstalk::SharedData$new(pubs, key = "".id"", group = ""pubs"")"
+"0",""
+"0","# A helper to show a bigger logo if present"
+"0","logo_card <- function(path) {"
+"0","  if (!is.null(path) && file.exists(path)) {"
+"0","    bslib::card("
+"0","      bslib::card_body("
+"0","        bslib::layout_columns("
+"0","          col_widths = c(2, 10),"
+"0","          htmltools::img(src = path, alt = ""Logo"", style = ""max-height:80px; border-radius:8px;""),"
+"0","          tagList("
+"0","            h4(""Publications Explorer""),"
+"0","            div(style=""opacity:.8;"","
+"0","                ""Use filters to narrow by year, type, and focus area. Use the table search for author names or keywords."")"
+"0","          )"
+"0","        )"
+"0","      )"
+"0","    )"
+"0","  } else {"
+"0","    NULL"
+"0","  }"
+"0","}"
+"0",""

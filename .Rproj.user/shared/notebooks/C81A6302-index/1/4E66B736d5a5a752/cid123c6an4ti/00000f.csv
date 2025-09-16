@@ -1,0 +1,14 @@
+"0","# Show your PDF from the ./www/ folder (works locally & on shinyapps.io)"
+"0","output$pdf_embed <- renderUI({"
+"0","  pdf_file <- params$citations_pdf"
+"0","  if (file.exists(file.path(""www"", pdf_file))) {"
+"0","    tags$iframe(src = pdf_file, style = ""width:100%; height:85vh; border:none;"", title = ""Citations PDF"")"
+"0","  } else {"
+"0","    tags$p(HTML(sprintf(""<b>PDF not found:</b> put <code>%s</code> into a <code>www/</code> folder next to this file."", pdf_file)))"
+"0","  }"
+"0","})"
+"2","G1;H1;Errorh: object 'output' not found
+Error during wrapup: not that many frames on the stack
+Error: no more error handlers available (recursive errors?); invoking 'abort' restart
+g"
+"0","uiOutput(""pdf_embed"")"
