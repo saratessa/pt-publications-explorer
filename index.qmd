@@ -21,7 +21,7 @@ library(plotly); library(DT); library(crosstalk); library(bslib); library(htmlto
 
 invisible(crosstalk::crosstalkLibs())
 
-# Pink-forward theme
+# Pink
 theme <- bslib::bs_theme(
   version = 5, bootswatch = "cosmo",
   primary   = "#E91E63", body_color = "#2f3342",
@@ -29,7 +29,7 @@ theme <- bslib::bs_theme(
 )
 bslib::bs_theme_set(theme)
 
-# ----- Data helpers -----
+
 read_publications <- function(path) {
   df <- readr::read_csv(path, show_col_types = FALSE) |>
     janitor::clean_names()
@@ -60,18 +60,17 @@ read_publications <- function(path) {
 pubs <- read_publications(params$data_path) |>
   dplyr::ungroup() |>
   dplyr::mutate(
-    .id = as.character(dplyr::row_number()),  # << key MUST be character
+    .id = as.character(dplyr::row_number()),   
     link_display = ifelse(is.na(link) | link=="", "", paste0("<a href='", link, "' target='_blank'>Open</a>"))
   ) |>
   as.data.frame()
 
-# ONE SharedData used by the plots (use the same group name everywhere)
+
 sd <- crosstalk::SharedData$new(pubs, key = ~.id, group = "pubs")
 
 ```
 
 ```{r}
-# ----- Optional header logo (shows only if the file exists) -----
 if (!is.null(params$logo_path) && file.exists(params$logo_path)) {
   bslib::card(
     bslib::card_body(
@@ -99,7 +98,7 @@ if (!is.null(params$logo_path) && file.exists(params$logo_path)) {
 bslib::layout_columns(
   col_widths = c(4, 8),
 
-  # LEFT: Filters (drive plots + table via group = 'pubs')
+  # LEFT: Filters 
   bslib::card(
     bslib::card_header("Filters"),
     bslib::card_body(
@@ -115,7 +114,7 @@ bslib::layout_columns(
     )
   ),
 
-  # RIGHT: Stats (these values update live via the table callback below)
+  # RIGHT: Stats 
   {
     stats_df <- pubs |>
       dplyr::summarise(
@@ -199,14 +198,12 @@ bslib::card(
 ### Browse and Search
 
 ```{r}
-# Build a clean data frame in a fixed column order
+# Build data frame  
 tbl_df <- pubs |>
   dplyr::select(.id, year, publicationtype, focusarea, author, title, link_display, keyword_field)
 
-# The table needs its OWN SharedData, same group + key formula
 sd_tbl <- crosstalk::SharedData$new(tbl_df, key = ~.id, group = "pubs")
 
-# Escape everything except the link column so links render
 escape_cols <- setdiff(seq_along(tbl_df), which(names(tbl_df) == "link_display"))
 
 bslib::card(
@@ -219,14 +216,13 @@ bslib::card(
       filter    = "top",
       extensions = "Buttons",
       options = list(
-        paging = FALSE,               # show all filtered rows at once (crucial for live stats)
+        paging = FALSE,             
         scrollY = "50vh",
         scrollCollapse = TRUE,
         autoWidth = TRUE,
         dom = "Bfrtip",
         buttons = c("copy", "csv", "excel", "print"),
         search  = list(search = ""),
-        # Hide .id (first) and keyword_field (last) in UI (JS uses 0-based indices)
         columnDefs = list(list(visible = FALSE, targets = c(0, ncol(tbl_df) - 1)))
       ),
       colnames = c("", "Year","Type","Focus Area","Author","Title","Link","_kw_"),
