@@ -1,6 +1,0 @@
-"0","library(htmltools)"
-"0","if (file.exists(params$pdf_path)) {"
-"0","  browsable(tags$iframe(src = params$pdf_path, style = ""width:100%; height:90vh; border:none;"", title = ""Citations PDF""))"
-"0","} else {"
-"0","  HTML(sprintf(""<p><strong>PDF not found:</strong> %s</p>"", params$pdf_path))"
-"0","}"
