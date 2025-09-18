@@ -14,10 +14,8 @@ params:
 ---
 
 ```{r}
-# ----- Setup -----
 library(readr); library(dplyr); library(tidyr); library(stringr); library(janitor)
 library(plotly); library(DT); library(crosstalk); library(bslib); library(htmltools)
-
 
 invisible(crosstalk::crosstalkLibs())
 
@@ -29,18 +27,25 @@ theme <- bslib::bs_theme(
 )
 bslib::bs_theme_set(theme)
 
-
 read_publications <- function(path) {
-  df <- readr::read_csv(path, show_col_types = FALSE) |>
+  df <- readr::read_csv(
+    path,
+    show_col_types = FALSE,
+    na = c("", "NA", "N/A")  
+  ) |>
     janitor::clean_names()
+
+  nm <- names(df)
+  if ("focus_area" %in% nm && !"focusarea" %in% nm) df <- dplyr::rename(df, focusarea = focus_area)
+  if ("focus.area" %in% nm && !"focusarea" %in% nm) df <- dplyr::rename(df, focusarea = `focus.area`)
+  if ("publication_type" %in% nm && !"publicationtype" %in% nm) df <- dplyr::rename(df, publicationtype = publication_type)
+  if ("publication.type" %in% nm && !"publicationtype" %in% nm) df <- dplyr::rename(df, publicationtype = `publication.type`)
 
   if ("year" %in% names(df)) suppressWarnings(df$year <- as.integer(df$year))
 
-  for (nm in intersect(c("title","author","publicationtype","focusarea"), names(df))) {
-    df[[nm]] <- as.character(df[[nm]]) |> stringr::str_squish()
-  }
+  trim_if_char <- function(x) if (is.character(x)) stringr::str_trim(x) else x
+  df <- dplyr::mutate(df, dplyr::across(dplyr::everything(), trim_if_char))
 
-  # map link column if named differently in CSV
   link_candidates <- intersect(names(df), c("link","url","pdf","doi","weblink","link_url"))
   if (length(link_candidates) == 0) {
     df$link <- NA_character_
@@ -48,26 +53,36 @@ read_publications <- function(path) {
     df$link <- df[[link_candidates[1]]]
   }
 
-  if ("focusarea" %in% names(df))
+  # blanks -> "Unspecified". Otherwise show EXACT CSV text
+  if ("focusarea" %in% names(df)) {
     df$focusarea <- ifelse(is.na(df$focusarea) | df$focusarea == "", "Unspecified", df$focusarea)
-  if ("publicationtype" %in% names(df))
+  } else {
+    df$focusarea <- "Unspecified"
+  }
+  if ("publicationtype" %in% names(df)) {
     df$publicationtype <- ifelse(is.na(df$publicationtype) | df$publicationtype == "", "Unspecified", df$publicationtype)
+  } else {
+    df$publicationtype <- "Unspecified"
+  }
 
-  df |> mutate(keyword_field = paste(title, focusarea, sep = " | "))
+  # Keep titles/authors as-is 
+  for (nm in intersect(c("title","author"), names(df))) {
+    df[[nm]] <- as.character(df[[nm]]) |> stringr::str_squish()
+  }
+
+  df |> dplyr::mutate(keyword_field = paste(title, focusarea, sep = " | "))
 }
 
-# Read data and build a character key for Crosstalk
+
 pubs <- read_publications(params$data_path) |>
   dplyr::ungroup() |>
   dplyr::mutate(
-    .id = as.character(dplyr::row_number()),   
-    link_display = ifelse(is.na(link) | link=="", "", paste0("<a href='", link, "' target='_blank'>Open</a>"))
+    .id = as.character(dplyr::row_number()),
+    link_display = ifelse(is.na(link) | link == "", "", paste0("<a href='", link, "' target='_blank'>Open</a>"))
   ) |>
   as.data.frame()
 
-
 sd <- crosstalk::SharedData$new(pubs, key = ~.id, group = "pubs")
-
 ```
 
 ```{r}
