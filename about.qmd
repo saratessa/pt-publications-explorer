@@ -5,7 +5,7 @@ toc: false
 
 ## What this is
 
-The **Publications Explorer** is a searchable, filterable dashboard of research relevant to Precision Teaching. You can filter by year, publication type, focus area, search by author/title keywords, sort columns, and open original sources via the **Link** column.
+The **Publications Explorer** is a searchable, filterable dashboard of research relevant to Precision Teaching. You can filter by year, publication type, focus area, search by author/title keywords, sort columns, and open original sources via the **open** column.
 
 ## Why this exists
 
