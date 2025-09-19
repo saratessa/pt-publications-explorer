@@ -14,38 +14,36 @@ params:
 ---
 
 ```{r}
-library(readr); library(dplyr); library(tidyr); library(stringr); library(janitor)
-library(plotly); library(DT); library(crosstalk); library(bslib); library(htmltools)
+#| label: setup
+#| include: false
+library(bslib)
+library(htmltools)
+library(dplyr)
+library(readr)
+library(janitor)
+library(stringr)
+library(DT)
+library(plotly)
+library(crosstalk)
 
-invisible(crosstalk::crosstalkLibs())
-
-# Pink
-theme <- bslib::bs_theme(
-  version = 5, bootswatch = "cosmo",
-  primary   = "#E91E63", body_color = "#2f3342",
-  base_font = bslib::font_google("Inter")
-)
-bslib::bs_theme_set(theme)
+# Theme
+theme <- bs_theme(bootswatch = "cosmo")
+bs_theme_set(theme)
 
 read_publications <- function(path) {
-  df <- readr::read_csv(
-    path,
-    show_col_types = FALSE,
-    na = c("", "NA", "N/A")  
-  ) |>
-    janitor::clean_names()
+  df <- read_csv(path, show_col_types = FALSE, na = c("", "NA", "N/A")) |>
+    clean_names()
 
   nm <- names(df)
-  if ("focus_area" %in% nm && !"focusarea" %in% nm) df <- dplyr::rename(df, focusarea = focus_area)
-  if ("focus.area" %in% nm && !"focusarea" %in% nm) df <- dplyr::rename(df, focusarea = `focus.area`)
-  if ("publication_type" %in% nm && !"publicationtype" %in% nm) df <- dplyr::rename(df, publicationtype = publication_type)
-  if ("publication.type" %in% nm && !"publicationtype" %in% nm) df <- dplyr::rename(df, publicationtype = `publication.type`)
-
+  if ("focus_area" %in% nm && !"focusarea" %in% nm) df <- rename(df, focusarea = focus_area)
+  if ("focus.area" %in% nm && !"focusarea" %in% nm) df <- rename(df, focusarea = `focus.area`)
+  if ("publication_type" %in% nm && !"publicationtype" %in% nm) df <- rename(df, publicationtype = publication_type)
+  if ("publication.type" %in% nm && !"publicationtype" %in% nm) df <- rename(df, publicationtype = `publication.type`)
   if ("year" %in% names(df)) suppressWarnings(df$year <- as.integer(df$year))
 
-  trim_if_char <- function(x) if (is.character(x)) stringr::str_trim(x) else x
-  df <- dplyr::mutate(df, dplyr::across(dplyr::everything(), trim_if_char))
-
+  trim_if_char <- function(x) if (is.character(x)) str_trim(x) else x
+  df <- mutate(df, across(everything(), trim_if_char))
+  
   link_candidates <- intersect(names(df), c("link","url","pdf","doi","weblink","link_url"))
   if (length(link_candidates) == 0) {
     df$link <- NA_character_
@@ -53,7 +51,7 @@ read_publications <- function(path) {
     df$link <- df[[link_candidates[1]]]
   }
 
-  # blanks -> "Unspecified". Otherwise show EXACT CSV text
+  # EXACT CSV text; blanks "Unspecified"
   if ("focusarea" %in% names(df)) {
     df$focusarea <- ifelse(is.na(df$focusarea) | df$focusarea == "", "Unspecified", df$focusarea)
   } else {
@@ -65,24 +63,23 @@ read_publications <- function(path) {
     df$publicationtype <- "Unspecified"
   }
 
-  # Keep titles/authors as-is 
+  # Keep titles/authors 
   for (nm in intersect(c("title","author"), names(df))) {
-    df[[nm]] <- as.character(df[[nm]]) |> stringr::str_squish()
+    df[[nm]] <- as.character(df[[nm]]) |> str_squish()
   }
 
-  df |> dplyr::mutate(keyword_field = paste(title, focusarea, sep = " | "))
+  df |>
+    mutate(
+      .id = as.character(row_number()),
+      keyword_field = paste(title, focusarea, sep = " | "),
+      link_display = ifelse(is.na(link) | link == "", "", paste0("<a href='", link, "' target='_blank'>Open</a>"))
+    )
 }
 
+pubs <- read_publications(params$data_path)
 
-pubs <- read_publications(params$data_path) |>
-  dplyr::ungroup() |>
-  dplyr::mutate(
-    .id = as.character(dplyr::row_number()),
-    link_display = ifelse(is.na(link) | link == "", "", paste0("<a href='", link, "' target='_blank'>Open</a>"))
-  ) |>
-  as.data.frame()
-
-sd <- crosstalk::SharedData$new(pubs, key = ~.id, group = "pubs")
+# SharedData for Crosstalk
+sd <- SharedData$new(pubs, key = ~.id, group = "pubs")
 ```
 
 ```{r}
@@ -169,15 +166,44 @@ bslib::layout_columns(
 bslib::layout_columns(
   col_widths = c(6, 6),
 
+  # Publications by Year
   bslib::card(
     bslib::card_header("Publications by Year"),
     bslib::card_body(
-      plotly::plot_ly(sd, x = ~year, type = "histogram",
-                      marker = list(color = "#E91E63")) |>
-        plotly::layout(xaxis = list(title = "Year"), yaxis = list(title = "Count"), bargap = 0.15)
+      {
+        yr_min <- suppressWarnings(min(pubs$year, na.rm = TRUE))
+        yr_max <- suppressWarnings(max(pubs$year, na.rm = TRUE))
+        if (!is.finite(yr_min) || !is.finite(yr_max)) {
+          htmltools::div("No year data to display.")
+        } else {
+          plotly::plot_ly(
+            sd,
+            x = ~year,
+            type = "histogram",
+            autobinx = FALSE,
+            xbins = list(
+              start = yr_min - 0.5,
+              end   = yr_max + 0.5,
+              size  = 1
+            ),
+            marker = list(color = "#E91E63")
+          ) |>
+            plotly::layout(
+              xaxis = list(
+                title = "Year",
+                tickmode = "linear",
+                dtick = 1,
+                tickangle = -45
+              ),
+              yaxis = list(title = "Count"),
+              bargap = 0.15
+            )
+        }
+      }
     )
   ),
 
+  # Publications by Type  
   bslib::card(
     bslib::card_header("Publications by Type"),
     bslib::card_body(
