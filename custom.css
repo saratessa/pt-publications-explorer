@@ -1,0 +1,17 @@
+/* Make the Crosstalk "Year" slider pink */
+#year .irs--flat .irs-bar,
+#year .irs--flat .irs-from,
+#year .irs--flat .irs-to,
+#year .irs--flat .irs-single {
+  background-color: #E91E63 !important;
+  border-color: #E91E63 !important;
+}
+
+#year .irs--flat .irs-handle > i:first-child {
+  background-color: #E91E63 !important;
+}
+
+/* Optional: lighten the track for contrast */
+#year .irs--flat .irs-line {
+  background-color: #f8d3e0 !important;
+}

@@ -119,13 +119,42 @@ bslib::card(
   bslib::card_header("Filters"),
   bslib::card_body(
     htmltools::tagList(
-      crosstalk::filter_slider(
-        "year", "Year", sd, ~year,
-        step = 1,
-        sep  = ""
+
+      # Force pink styling for ionRangeSlider (used by Crosstalk filter_slider)
+      htmltools::tags$style(htmltools::HTML("
+        .pink-slider .irs--flat .irs-bar,
+        .pink-slider .irs--flat .irs-from,
+        .pink-slider .irs--flat .irs-to,
+        .pink-slider .irs--flat .irs-single {
+          background-color: #E91E63 !important;
+          border-color: #E91E63 !important;
+        }
+        .pink-slider .irs--flat .irs-handle > i:first-child {
+          background-color: #E91E63 !important;
+        }
+        .pink-slider .irs--flat .irs-line {
+          background-color: #f8d3e0 !important; /* lighter track */
+        }
+        .pink-slider .irs--flat .irs-handle.state_hover > i:first-child,
+        .pink-slider .irs--flat .irs-handle:hover > i:first-child {
+          background-color: #E91E63 !important; /* prevent blue on hover */
+        }
+      ")),
+
+      # Year slider wrapped so the CSS only targets this block
+      htmltools::div(
+        class = "pink-slider",
+        crosstalk::filter_slider(
+          "year", "Year", sd, ~year,
+          step = 1,
+          sep  = ""
+        )
       ),
+
+      # Other filters unchanged
       crosstalk::filter_select("type",  "Publication type", sd, ~publicationtype, multiple = TRUE),
       crosstalk::filter_select("focus", "Focus area",       sd, ~focusarea,       multiple = TRUE),
+
       htmltools::div(
         style = "margin-top:.25rem; font-size:.9rem; opacity:.8;",
         "Tip: Use the table’s global search for author names or topic keywords."
@@ -133,6 +162,7 @@ bslib::card(
     )
   )
 ),
+
 
   # RIGHT: Stats 
   {
@@ -331,3 +361,28 @@ bslib::card(
 )
 
 ```
+
+{=html}
+<script>
+(function () {
+  const pink = '#E91E63';
+  const track = '#f8d3e0';
+
+  function paintSlider() {
+    document.querySelectorAll('.irs--flat .irs-bar, .irs--flat .irs-from, .irs--flat .irs-to, .irs--flat .irs-single')
+      .forEach(el => { el.style.backgroundColor = pink; el.style.borderColor = pink; });
+    document.querySelectorAll('.irs--flat .irs-handle > i:first-child')
+      .forEach(el => { el.style.backgroundColor = pink; });
+    document.querySelectorAll('.irs--flat .irs-handle.state_hover > i:first-child, .irs--flat .irs-handle:hover > i:first-child')
+      .forEach(el => { el.style.backgroundColor = pink; });
+    document.querySelectorAll('.irs--flat .irs-line')
+      .forEach(el => { el.style.backgroundColor = track; });
+  }
+
+  // Paint now, repaint on DOM changes (e.g., Crosstalk initializes) and on Crosstalk events
+  paintSlider();
+  new MutationObserver(paintSlider).observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('crosstalk:selection-changed', paintSlider, true);
+})();
+</script>
+

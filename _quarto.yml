@@ -17,7 +17,8 @@ website:
 
 format:
   html:
+    css: 
+      - custom.css
     theme: cosmo
     primary: "#E91E63"
     toc: false
-    css: custom.css
