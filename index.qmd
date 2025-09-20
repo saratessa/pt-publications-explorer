@@ -80,7 +80,10 @@ read_publications <- function(path) {
 pubs <- read_publications(params$data_path)
 
 # SharedData for Crosstalk
-sd <- SharedData$new(pubs, key = ~.id, group = "pubs")
+sd <- crosstalk::SharedData$new(
+  pubs |> dplyr::mutate(year = as.integer(year)),
+  key   = ~.id,
+  group = "pubs")
 ```
 
 ```{r}
@@ -112,20 +115,24 @@ bslib::layout_columns(
   col_widths = c(4, 8),
 
   # LEFT: Filters 
-  bslib::card(
-    bslib::card_header("Filters"),
-    bslib::card_body(
-      htmltools::tagList(
-        crosstalk::filter_slider("year",  "Year",             sd, ~year),
-        crosstalk::filter_select("type",  "Publication type", sd, ~publicationtype, multiple = TRUE),
-        crosstalk::filter_select("focus", "Focus area",       sd, ~focusarea,       multiple = TRUE),
-        htmltools::div(
-          style = "margin-top:.25rem; font-size:.9rem; opacity:.8;",
-          "Tip: Use the table’s global search for author names or topic keywords."
-        )
+bslib::card(
+  bslib::card_header("Filters"),
+  bslib::card_body(
+    htmltools::tagList(
+      crosstalk::filter_slider(
+        "year", "Year", sd, ~year,
+        step = 1,
+        sep  = ""
+      ),
+      crosstalk::filter_select("type",  "Publication type", sd, ~publicationtype, multiple = TRUE),
+      crosstalk::filter_select("focus", "Focus area",       sd, ~focusarea,       multiple = TRUE),
+      htmltools::div(
+        style = "margin-top:.25rem; font-size:.9rem; opacity:.8;",
+        "Tip: Use the table’s global search for author names or topic keywords."
       )
     )
-  ),
+  )
+),
 
   # RIGHT: Stats 
   {
