@@ -1,0 +1,29 @@
+/* Crosstalk filter_slider (ionRangeSlider) theming */
+.crosstalk-input .irs-bar,
+.crosstalk-input .irs-from,
+.crosstalk-input .irs-to,
+.crosstalk-input .irs-single {
+  background-color: #E91E63;
+  border-color: #E91E63;
+}
+
+.crosstalk-input .irs-handle > i:first-child {
+  background-color: #E91E63;
+  border-color: #E91E63;
+}
+
+.crosstalk-input .irs-line {
+  background-color: #f8d0df; /* lighter track (optional) */
+}
+
+.crosstalk-input .irs-grid-text {  /* tick labels (optional) */
+  color: #E91E63;
+}
+
+/* If your slider happens to use noUiSlider (some widgets do), cover it too */
+.crosstalk-input .noUi-connect { background: #E91E63; }
+.crosstalk-input .noUi-handle { border-color: #E91E63; }
+
+/* Fallback for a native <input type="range"> */
+.crosstalk-input input[type="range"].form-range::-webkit-slider-thumb { background: #E91E63; }
+.crosstalk-input input[type="range"].form-range::-moz-range-thumb { background: #E91E63; }
