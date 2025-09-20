@@ -363,26 +363,25 @@ bslib::card(
 ```
 
 {=html}
-<script>
-(function () {
-  const pink = '#E91E63';
-  const track = '#f8d3e0';
-
-  function paintSlider() {
-    document.querySelectorAll('.irs--flat .irs-bar, .irs--flat .irs-from, .irs--flat .irs-to, .irs--flat .irs-single')
-      .forEach(el => { el.style.backgroundColor = pink; el.style.borderColor = pink; });
-    document.querySelectorAll('.irs--flat .irs-handle > i:first-child')
-      .forEach(el => { el.style.backgroundColor = pink; });
-    document.querySelectorAll('.irs--flat .irs-handle.state_hover > i:first-child, .irs--flat .irs-handle:hover > i:first-child')
-      .forEach(el => { el.style.backgroundColor = pink; });
-    document.querySelectorAll('.irs--flat .irs-line')
-      .forEach(el => { el.style.backgroundColor = track; });
-  }
-
-  // Paint now, repaint on DOM changes (e.g., Crosstalk initializes) and on Crosstalk events
-  paintSlider();
-  new MutationObserver(paintSlider).observe(document.body, { childList: true, subtree: true });
-  document.addEventListener('crosstalk:selection-changed', paintSlider, true);
-})();
-</script>
-
+<style>
+/* Make Crosstalk/ionRangeSlider pink for BOTH skins (flat + shiny) */
+.irs--flat .irs-bar, .irs--flat .irs-from, .irs--flat .irs-to, .irs--flat .irs-single,
+.irs--shiny .irs-bar, .irs--shiny .irs-from, .irs--shiny .irs-to, .irs--shiny .irs-single {
+  background-color: #E91E63 !important;
+  border-color: #E91E63 !important;
+}
+.irs--flat .irs-handle > i:first-child,
+.irs--shiny .irs-handle > i:first-child {
+  background-color: #E91E63 !important;
+}
+.irs--flat .irs-line, .irs--shiny .irs-line {
+  background-color: #f8d3e0 !important;
+}
+/* prevent hover/active flicker back to blue */
+.irs--flat .irs-handle.state_hover > i:first-child,
+.irs--flat .irs-handle:hover > i:first-child,
+.irs--shiny .irs-handle.state_hover > i:first-child,
+.irs--shiny .irs-handle:hover > i:first-child {
+  background-color: #E91E63 !important;
+}
+</style>
