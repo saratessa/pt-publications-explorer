@@ -27,6 +27,7 @@ library(plotly)
 library(crosstalk)
 
 # Theme
+brand <- "#E91E63"
 theme <- bs_theme(bootswatch = "cosmo")
 bs_theme_set(theme)
 
@@ -186,7 +187,7 @@ bslib::layout_columns(
               end   = yr_max + 0.5,
               size  = 1
             ),
-            marker = list(color = "#2E7DA6")
+            marker = list(color = "#E91E63") 
           ) |>
             plotly::layout(
               xaxis = list(
@@ -208,7 +209,7 @@ bslib::layout_columns(
     bslib::card_header("Publications by Type"),
     bslib::card_body(
       plotly::plot_ly(sd, x = ~publicationtype, type = "histogram",
-                      marker = list(color = "#2E7DA6")) |>
+                      marker = list(color = "#E91E63")) |>
         plotly::layout(xaxis = list(title = ""), yaxis = list(title = "Count"))
     )
   )
@@ -228,7 +229,7 @@ bslib::card(
       sd,
       y = ~factor(focusarea, levels = fa_counts$focusarea[order(fa_counts$n)]),
       type = "histogram", orientation = "h",
-      marker = list(color = "#3B4F66")
+      marker = list(color = "#E91E63")
     ) |>
       plotly::layout(xaxis = list(title = "Count"), yaxis = list(title = ""), margin = list(l = 180))
   )
