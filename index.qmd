@@ -107,6 +107,19 @@ if (!is.null(params$logo_path) && file.exists(params$logo_path)) {
 ### Filters and Stats
 
 ```{r}
+pink_css <- htmltools::tags$style(htmltools::HTML("
+/* Crosstalk filter_slider() uses ionRangeSlider (flat theme) */
+.irs--flat .irs-bar,
+.irs--flat .irs-from,
+.irs--flat .irs-to,
+.irs--flat .irs-single { background-color:#E91E63; }
+
+.irs--flat .irs-handle > i:first-child { background-color:#E91E63; }
+
+.irs--flat .irs-line { background-color:#fde4ee; }   /* light track */
+.irs--flat .irs-grid-pol { background:#E91E63; }     /* tick marks */
+"))
+
 bslib::layout_columns(
   col_widths = c(4, 8),
 
@@ -115,6 +128,7 @@ bslib::layout_columns(
     bslib::card_header("Filters"),
     bslib::card_body(
       htmltools::tagList(
+        pink_css,  
         crosstalk::filter_slider("year",  "Year",             sd, ~year),
         crosstalk::filter_select("type",  "Publication type", sd, ~publicationtype, multiple = TRUE),
         crosstalk::filter_select("focus", "Focus area",       sd, ~focusarea,       multiple = TRUE),
